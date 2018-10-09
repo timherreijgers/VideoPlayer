@@ -5,6 +5,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaTimestamp;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -28,8 +29,12 @@ public class VideoPlayer extends RelativeLayout implements SurfaceHolder.Callbac
     private MediaPlayer mediaPlayer;
     private boolean isVideoSizeKnown = false;
     private boolean isVideoReadyToBePlayed = false;
+    private boolean hasActiveHolder;
     private int videoWidth;
     private int videoHeight;
+    private TimerTask timerTask;
+
+    private boolean playing = false;
 
     public VideoPlayer(Context context) {
         this(context, null);
@@ -38,29 +43,46 @@ public class VideoPlayer extends RelativeLayout implements SurfaceHolder.Callbac
     public VideoPlayer(Context context, AttributeSet attrs) {
         super(context, attrs);
         LayoutInflater.from(context).inflate(R.layout.video_view, this);
+
+        timerTask = new TimerTask();
         surfaceView = findViewById(R.id.surfaceView);
+
         surfaceHolder = surfaceView.getHolder();
         surfaceHolder.addCallback(this);
-        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_GPU);
+        Log.d(TAG, "VideoPlayer: Reloaded the whole view!!!!!!");
     }
 
-    private void playVideo(){
-        try {
-            mediaPlayer = new MediaPlayer();
-            mediaPlayer.setDataSource("http://vjs.zencdn.net/v/oceans.mp4");
-            mediaPlayer.setDisplay(surfaceHolder);
-            mediaPlayer.prepare();
-            mediaPlayer.setOnBufferingUpdateListener(this);
-            mediaPlayer.setOnCompletionListener(this);
-            mediaPlayer.setOnPreparedListener(this);
-            mediaPlayer.setOnVideoSizeChangedListener(this);
-//            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-        }catch(IOException e){
-            e.printStackTrace();
-        }
-    }
+    public void playVideo(String path) throws IOException{
+        Log.d(TAG, "playVideo() called with: path = [" + path + "]");
+        final VideoPlayer player = this;
 
-    public void playVideo(String path) throws IOException {
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setDataSource(path);
+        mediaPlayer.setOnBufferingUpdateListener(player);
+        mediaPlayer.setOnCompletionListener(player);
+        mediaPlayer.setOnPreparedListener(player);
+        mediaPlayer.setOnVideoSizeChangedListener(player);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+        new AsyncTask<Void, Void, Void>(){
+            @Override
+            protected Void doInBackground(Void... voids) {
+                while(!hasActiveHolder);
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                super.onPostExecute(aVoid);
+                try {
+                    mediaPlayer.setDisplay(surfaceHolder);
+                    mediaPlayer.prepare();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.execute();
 
     }
 
@@ -68,21 +90,20 @@ public class VideoPlayer extends RelativeLayout implements SurfaceHolder.Callbac
         Log.d(TAG, "startVideoPlayback() called");
         surfaceHolder.setFixedSize(videoWidth, videoHeight);
         mediaPlayer.start();
+        timerTask.start();
+        playing = true;
     }
 
     @Override
     public void surfaceCreated(SurfaceHolder surfaceHolder) {
         Log.d(TAG, "surfaceCreated() called with: surfaceHolder = [" + surfaceHolder + "]");
+        hasActiveHolder = true;
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
         Log.d(TAG, "surfaceChanged() called with: surfaceHolder = [" + surfaceHolder + "], i = [" + i + "], i1 = [" + i1 + "], i2 = [" + i2 + "]");
-        if(mediaPlayer != null && mediaPlayer.isPlaying()){
-//            playVideo();
-        }else {
-            playVideo();
-        }
+        hasActiveHolder = false;
     }
 
     @Override
@@ -104,9 +125,8 @@ public class VideoPlayer extends RelativeLayout implements SurfaceHolder.Callbac
     public void onPrepared(MediaPlayer mediaPlayer) {
         Log.d(TAG, "onPrepared() called with: mediaPlayer = [" + mediaPlayer + "]");
         isVideoReadyToBePlayed = true;
-        if (isVideoSizeKnown) {
+        if(isVideoSizeKnown)
             startVideoPlayback();
-        }
     }
 
     @Override
@@ -121,8 +141,15 @@ public class VideoPlayer extends RelativeLayout implements SurfaceHolder.Callbac
         videoWidth = width;
 
         isVideoSizeKnown = true;
-        if (isVideoReadyToBePlayed) {
+        if(isVideoReadyToBePlayed)
             startVideoPlayback();
-        }
+    }
+
+    public boolean isPlaying() {
+        return playing;
+    }
+
+    public int getTime(){
+        return timerTask.getTime();
     }
 }
