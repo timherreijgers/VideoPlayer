@@ -1,7 +1,6 @@
 package nl.timherreijgers.videoplayer;
 
 import android.os.Handler;
-import android.widget.VideoView;
 
 public class VideoTime {
 
@@ -9,17 +8,34 @@ public class VideoTime {
     private Handler handler;
     public OnTimeChangedListener listener;
 
-    public VideoTime(){
+    public void start(){
         time = 0;
-        handler = new Handler();
+        startHandler();
     }
 
-    public void start(){
-
+    private void startHandler() {
+        handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                time++;
+                if(hasOnChangedTimeListener())
+                    listener.OnTimeChanged(time);
+            }
+        }, 1000);
     }
 
     public void stop(){
+        handler = null;
+        time = 0;
+    }
 
+    public void pause(){
+        stop();
+    }
+
+    public void resume(){
+        startHandler();
     }
 
     public void setTime(int seconds){
