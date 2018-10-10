@@ -1,20 +1,21 @@
 package nl.timherreijgers.videoplayer;
 
+import android.os.AsyncTask;
 import android.util.Log;
 
-public class TimerTask extends Thread {
+public class TimerTask extends AsyncTask<Void, Void, Void>{
 
     private static final String TAG = VideoPlayer.class.getSimpleName();
 
     private int time;
     private boolean running;
 
-    public TimerTask(){
+    public TimerTask() {
         running = true;
     }
 
     @Override
-    public void run() {
+    protected Void doInBackground(Void... voids) {
         while(running) {
             try {
                 Thread.sleep(1000);
@@ -23,10 +24,11 @@ public class TimerTask extends Thread {
                 e.printStackTrace();
             }
         }
+        return null;
     }
 
     public void start(){
-        Log.d(TAG, "start: TimerTask state: " + getState());
+
     }
 
     public void stopTimer(){

@@ -19,17 +19,18 @@ import java.io.FileInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Timer;
 
-public class VideoPlayer extends RelativeLayout implements SurfaceHolder.Callback, MediaPlayer.OnBufferingUpdateListener, MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnVideoSizeChangedListener {
+public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener, SurfaceHolder.Callback {
 
     private static final String TAG = VideoPlayer.class.getSimpleName();
 
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private MediaPlayer mediaPlayer;
-    private boolean isVideoSizeKnown = false;
-    private boolean isVideoReadyToBePlayed = false;
-    private boolean hasActiveHolder;
+
+    private boolean sourceHasBeenSet = false;
+
     private int videoWidth;
     private int videoHeight;
     private TimerTask timerTask;
@@ -43,106 +44,35 @@ public class VideoPlayer extends RelativeLayout implements SurfaceHolder.Callbac
     public VideoPlayer(Context context, AttributeSet attrs) {
         super(context, attrs);
         LayoutInflater.from(context).inflate(R.layout.video_view, this);
-
+        mediaPlayer = new MediaPlayer();
         timerTask = new TimerTask();
-        surfaceView = findViewById(R.id.surfaceView);
 
-        surfaceHolder = surfaceView.getHolder();
-        surfaceHolder.addCallback(this);
-        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_GPU);
-        Log.d(TAG, "VideoPlayer: Reloaded the whole view!!!!!!");
+        surfaceView = findViewById(R.id.surfaceView);
+        surfaceView.getHolder().addCallback(this);
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
     }
 
     public void playVideo(String path) throws IOException{
         Log.d(TAG, "playVideo() called with: path = [" + path + "]");
-        final VideoPlayer player = this;
+        mediaPlayer.setOnPreparedListener(this);
 
-        mediaPlayer = new MediaPlayer();
         mediaPlayer.setDataSource(path);
-        mediaPlayer.setOnBufferingUpdateListener(player);
-        mediaPlayer.setOnCompletionListener(player);
-        mediaPlayer.setOnPreparedListener(player);
-        mediaPlayer.setOnVideoSizeChangedListener(player);
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mediaPlayer.setScreenOnWhilePlaying(true);
+        mediaPlayer.prepareAsync();
 
-        new AsyncTask<Void, Void, Void>(){
-            @Override
-            protected Void doInBackground(Void... voids) {
-                while(!hasActiveHolder);
-                return null;
-            }
-
-            @Override
-            protected void onPostExecute(Void aVoid) {
-                super.onPostExecute(aVoid);
-                try {
-                    mediaPlayer.setDisplay(surfaceHolder);
-                    mediaPlayer.prepare();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }.execute();
-
+        sourceHasBeenSet = true;
     }
 
     private void startVideoPlayback() {
-        Log.d(TAG, "startVideoPlayback() called");
+        Log.d(TAG, "startVideoPlayback() called with: sourceHasBeenSet = [" + sourceHasBeenSet + "], surfaceHolder = [" + surfaceHolder + "]");
+        if(!sourceHasBeenSet || surfaceHolder == null || videoHeight == 0 || videoWidth == 0)
+            return;
+
+        mediaPlayer.setDisplay(surfaceHolder);
         surfaceHolder.setFixedSize(videoWidth, videoHeight);
         mediaPlayer.start();
-        timerTask.start();
+        timerTask.execute();
         playing = true;
-    }
-
-    @Override
-    public void surfaceCreated(SurfaceHolder surfaceHolder) {
-        Log.d(TAG, "surfaceCreated() called with: surfaceHolder = [" + surfaceHolder + "]");
-        hasActiveHolder = true;
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-        Log.d(TAG, "surfaceChanged() called with: surfaceHolder = [" + surfaceHolder + "], i = [" + i + "], i1 = [" + i1 + "], i2 = [" + i2 + "]");
-        hasActiveHolder = false;
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-        Log.d(TAG, "surfaceDestroyed() called with: surfaceHolder = [" + surfaceHolder + "]");
-    }
-
-    @Override
-    public void onBufferingUpdate(MediaPlayer mediaPlayer, int percent) {
-        Log.d(TAG, "onBufferingUpdate() called with: mediaPlayer = [" + mediaPlayer + "], percent = [" + percent + "]");
-    }
-
-    @Override
-    public void onCompletion(MediaPlayer mediaPlayer) {
-        Log.d(TAG, "onCompletion() called with: mediaPlayer = [" + mediaPlayer + "]");
-    }
-
-    @Override
-    public void onPrepared(MediaPlayer mediaPlayer) {
-        Log.d(TAG, "onPrepared() called with: mediaPlayer = [" + mediaPlayer + "]");
-        isVideoReadyToBePlayed = true;
-        if(isVideoSizeKnown)
-            startVideoPlayback();
-    }
-
-    @Override
-    public void onVideoSizeChanged(MediaPlayer mediaPlayer, int width, int height) {
-        Log.d(TAG, "onVideoSizeChanged() called with: mediaPlayer = [" + mediaPlayer + "], width = [" + width + "], height = [" + height + "]");
-        if (width == 0 || height == 0) {
-            Log.e(TAG, "invalid video width(" + width + ") or height(" + height
-                    + ")");
-            return;
-        }
-        videoHeight = height;
-        videoWidth = width;
-
-        isVideoSizeKnown = true;
-        if(isVideoReadyToBePlayed)
-            startVideoPlayback();
     }
 
     public boolean isPlaying() {
@@ -151,5 +81,30 @@ public class VideoPlayer extends RelativeLayout implements SurfaceHolder.Callbac
 
     public int getTime(){
         return timerTask.getTime();
+    }
+
+    @Override
+    public void onPrepared(MediaPlayer mp) {
+        Log.d(TAG, "onPrepared() called with: mp = [" + mp + "]");
+        videoWidth = mp.getVideoWidth();
+        videoHeight = mp.getVideoHeight();
+        startVideoPlayback();
+    }
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        this.surfaceHolder = holder;
+        startVideoPlayback();
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        mediaPlayer.stop();
+        mediaPlayer = null;
     }
 }
