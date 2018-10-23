@@ -14,12 +14,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.RelativeLayout;
 
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FilterInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Timer;
 
 public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener, SurfaceHolder.Callback {
 
@@ -33,7 +28,6 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
     private int videoWidth;
     private int videoHeight;
-    private TimerTask timerTask;
 
     private boolean playing = false;
 
@@ -45,7 +39,6 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         super(context, attrs);
         LayoutInflater.from(context).inflate(R.layout.video_view, this);
         mediaPlayer = new MediaPlayer();
-        timerTask = new TimerTask();
 
         surfaceView = findViewById(R.id.surfaceView);
         surfaceView.getHolder().addCallback(this);
@@ -71,7 +64,6 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         mediaPlayer.setDisplay(surfaceHolder);
         surfaceHolder.setFixedSize(videoWidth, videoHeight);
         mediaPlayer.start();
-        timerTask.execute();
         playing = true;
     }
 
@@ -80,7 +72,7 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     public int getTime(){
-        return timerTask.getTime();
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

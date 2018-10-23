@@ -14,7 +14,7 @@ import java.io.IOException;
 
 import nl.timherreijgers.videoplayer.VideoPlayer;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity {
 
     private VideoPlayer player;
 
@@ -22,22 +22,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        player = findViewById(R.id.videoPlayer);
-        try {
-            player.playVideo("http://vjs.zencdn.net/v/oceans.mp4");
-            player.setOnClickListener(this);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        VideoView videoView = new VideoView(this);
-        videoView.setVideoURI(Uri.parse("http://vjs.zencdn.net/v/oceans.mp4"));
-    }
-
-    @Override
-    public void onClick(View v) {
-        if(player.isPlaying()){
-            Log.d(VideoPlayer.class.getSimpleName(), "run: time:" + player.getTime());
-        }
+//        player = findViewById(R.id.videoPlayer);
+//        try {
+//            player.playVideo("http://vjs.zencdn.net/v/oceans.mp4");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 }
