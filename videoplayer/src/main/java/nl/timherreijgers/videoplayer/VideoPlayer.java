@@ -3,10 +3,7 @@ package nl.timherreijgers.videoplayer;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.MediaTimestamp;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.provider.MediaStore;
+import android.support.constraint.ConstraintLayout;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,12 +13,13 @@ import android.widget.RelativeLayout;
 
 import java.io.IOException;
 
-public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener, SurfaceHolder.Callback {
+public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener, SurfaceHolder.Callback, VideoControlView.OnControlInteractedListener {
 
     private static final String TAG = VideoPlayer.class.getSimpleName();
 
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
+    private VideoControlView videoControlView;
     private MediaPlayer mediaPlayer;
 
     private boolean sourceHasBeenSet = false;
@@ -42,7 +40,12 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
         surfaceView = findViewById(R.id.surfaceView);
         surfaceView.getHolder().addCallback(this);
+
+        videoControlView = findViewById(R.id.videoControlView);
+        videoControlView.setListener(this);
+
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
     }
 
     public void playVideo(String path) throws IOException{
@@ -98,5 +101,16 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     public void surfaceDestroyed(SurfaceHolder holder) {
         mediaPlayer.stop();
         mediaPlayer = null;
+    }
+
+    @Override
+    public void onPauseButtonClicked() {
+        if(!sourceHasBeenSet || surfaceHolder == null || videoHeight == 0 || videoWidth == 0)
+            return;
+
+        if(mediaPlayer.isPlaying())
+            mediaPlayer.pause();
+        else
+            mediaPlayer.start();
     }
 }

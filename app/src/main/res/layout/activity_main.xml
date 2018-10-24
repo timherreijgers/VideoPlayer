@@ -6,12 +6,9 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <!--<nl.timherreijgers.videoplayer.VideoPlayer-->
-        <!--android:layout_height="match_parent"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:id="@+id/videoPlayer"/>-->
-
-    <nl.timherreijgers.videoplayer.VideoControlView android:layout_height="wrap_content"
-        android:layout_width="wrap_content" />
+    <nl.timherreijgers.videoplayer.VideoPlayer
+        android:layout_height="match_parent"
+        android:layout_width="match_parent"
+        android:id="@+id/videoPlayer"/>
 
 </android.support.constraint.ConstraintLayout>

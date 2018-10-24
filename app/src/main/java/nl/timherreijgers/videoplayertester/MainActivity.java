@@ -22,11 +22,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-//        player = findViewById(R.id.videoPlayer);
-//        try {
-//            player.playVideo("http://vjs.zencdn.net/v/oceans.mp4");
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
+        player = findViewById(R.id.videoPlayer);
+        try {
+            player.playVideo("http://vjs.zencdn.net/v/oceans.mp4");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

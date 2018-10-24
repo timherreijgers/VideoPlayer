@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="video_player_background_color">#5a5a5a5a</color>
+    <color name="video_player_background_color">#AF000000</color>
 </resources>
