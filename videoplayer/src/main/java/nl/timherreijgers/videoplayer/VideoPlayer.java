@@ -68,6 +68,7 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         surfaceHolder.setFixedSize(videoWidth, videoHeight);
         mediaPlayer.start();
         playing = true;
+        videoControlView.setPlaying(false);
     }
 
     public boolean isPlaying() {
@@ -112,5 +113,7 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
             mediaPlayer.pause();
         else
             mediaPlayer.start();
+
+        videoControlView.setPlaying(!mediaPlayer.isPlaying());
     }
 }
