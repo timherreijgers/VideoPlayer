@@ -4,15 +4,19 @@ import android.content.Context;
 import android.os.Build;
 import android.support.constraint.ConstraintLayout;
 import android.support.graphics.drawable.AnimatedVectorDrawableCompat;
+import android.support.graphics.drawable.AnimationUtilsCompat;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.AnimationUtils;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 
 class VideoControlView extends ConstraintLayout implements View.OnClickListener {
 
     private ImageButton playButton;
+    private ImageButton backButton;
     private ProgressBar progressBar;
     private OnControlInteractedListener listener;
     private boolean playing;
@@ -37,6 +41,9 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
         playButton = findViewById(R.id.playButton);
         playButton.setOnClickListener(this);
 
+        backButton = findViewById(R.id.backButton);
+        backButton.setOnClickListener(this);
+
         playing = true;
         playToPause = AnimatedVectorDrawableCompat.create(context, R.drawable.play_to_pause);
         pauseToPlay = AnimatedVectorDrawableCompat.create(context, R.drawable.pause_to_play);
@@ -44,10 +51,15 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
 
     @Override
     public void onClick(View view) {
-        playing = !playing;
-        //updatePlayButton();
-        if(listener != null)
-            listener.onPauseButtonClicked();
+        if(view.getId() == playButton.getId()) {
+            playing = !playing;
+            //updatePlayButton();
+            if (listener != null)
+                listener.onPauseButtonClicked();
+        }
+        else if(view.getId() == backButton.getId()){
+            view.animate();
+        }
     }
 
     private void updatePlayButton() {
