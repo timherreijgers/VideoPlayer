@@ -1,5 +1,6 @@
 package nl.timherreijgers.videoplayer;
 
+import android.app.Application;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -29,11 +30,13 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
     private boolean playing = false;
 
+    private Thread timeThread;
+
     public VideoPlayer(Context context) {
         this(context, null);
     }
 
-    public VideoPlayer(Context context, AttributeSet attrs) {
+    public VideoPlayer(final Context context, AttributeSet attrs) {
         super(context, attrs);
         LayoutInflater.from(context).inflate(R.layout.video_view, this);
         mediaPlayer = new MediaPlayer();
@@ -46,6 +49,17 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
+        timeThread = new Thread(() -> {
+            while(true){
+                try{
+                    Thread.sleep(1000);
+                    post(() -> videoControlView.setCurrentTime(mediaPlayer.getCurrentPosition() / 1000));
+                }catch (InterruptedException e){
+                    e.printStackTrace();
+                }
+            }
+        });
+        timeThread.start();
     }
 
     public void playVideo(String path) throws IOException{
@@ -69,6 +83,10 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         mediaPlayer.start();
         playing = true;
         videoControlView.setPlaying(false);
+        if(mediaPlayer.getDuration() != -1)
+            videoControlView.setTotalTime(mediaPlayer.getDuration() / 1000);
+
+
     }
 
     public boolean isPlaying() {
@@ -115,5 +133,15 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
             mediaPlayer.start();
 
         videoControlView.setPlaying(!mediaPlayer.isPlaying());
+    }
+
+    @Override
+    public void onBackButtonClicked() {
+
+    }
+
+    @Override
+    public void onTimeChanged(int time) {
+
     }
 }

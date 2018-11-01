@@ -6,36 +6,57 @@ public class VideoTime {
 
     private int time;
     private Handler handler;
-    public OnTimeChangedListener listener;
+    private OnTimeChangedListener listener;
+    private boolean paused;
+    private long lastMillis = -1;
+    private long millisSinceLastTick = -1;
+
+    public VideoTime(){
+        handler = new Handler();
+        paused = false;
+    }
+
+    private Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+            if(paused) return;
+            lastMillis = System.currentTimeMillis();
+            time++;
+            if(hasOnChangedTimeListener())
+                listener.OnTimeChanged(time);
+            handler.postDelayed(runnable, 1000);
+        }
+    };
 
     public void start(){
         time = 0;
-        startHandler();
-    }
-
-    private void startHandler() {
-        handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                time++;
-                if(hasOnChangedTimeListener())
-                    listener.OnTimeChanged(time);
-            }
-        }, 1000);
+        runnable.run();
     }
 
     public void stop(){
+        handler.removeCallbacks(runnable);
         handler = null;
         time = 0;
     }
 
     public void pause(){
-        stop();
+        if(lastMillis != -1)
+            millisSinceLastTick = System.currentTimeMillis() - lastMillis;
+        handler.removeCallbacks(runnable);
     }
 
     public void resume(){
-        startHandler();
+        if(millisSinceLastTick != -1 && millisSinceLastTick < 1000) {
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    runnable.run();
+                }
+            }, 1000 - millisSinceLastTick);
+            lastMillis = -1;
+            millisSinceLastTick = -1;
+        }else
+            runnable.run();
     }
 
     public void setTime(int seconds){

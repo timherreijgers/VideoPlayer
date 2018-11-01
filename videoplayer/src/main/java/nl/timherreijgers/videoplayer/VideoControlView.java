@@ -2,6 +2,7 @@ package nl.timherreijgers.videoplayer;
 
 import android.content.Context;
 import android.os.Build;
+import android.support.annotation.RestrictTo;
 import android.support.constraint.ConstraintLayout;
 import android.support.graphics.drawable.AnimatedVectorDrawableCompat;
 import android.support.graphics.drawable.AnimationUtilsCompat;
@@ -12,16 +13,23 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
-class VideoControlView extends ConstraintLayout implements View.OnClickListener {
+class VideoControlView extends ConstraintLayout implements View.OnClickListener, VideoTime.OnTimeChangedListener {
 
     private ImageButton playButton;
     private ImageButton backButton;
     private ProgressBar progressBar;
+    private TextView currentTimeTextView;
+    private TextView totalTimeTextView;
+
     private OnControlInteractedListener listener;
-    private boolean playing;
     private AnimatedVectorDrawableCompat playToPause;
     private AnimatedVectorDrawableCompat pauseToPlay;
+
+
+    private boolean playing;
+    private int totalTime;
 
     public VideoControlView(Context context) {
         this(context, null);
@@ -44,21 +52,28 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
         backButton = findViewById(R.id.backButton);
         backButton.setOnClickListener(this);
 
-        playing = true;
+        currentTimeTextView = findViewById(R.id.currentTime);
+        totalTimeTextView = findViewById(R.id.totalTime);
+
         playToPause = AnimatedVectorDrawableCompat.create(context, R.drawable.play_to_pause);
         pauseToPlay = AnimatedVectorDrawableCompat.create(context, R.drawable.pause_to_play);
+
+        playing = true;
+        totalTime = 0;
     }
 
     @Override
     public void onClick(View view) {
         if(view.getId() == playButton.getId()) {
             playing = !playing;
-            //updatePlayButton();
+
+            updatePlayButton();
             if (listener != null)
                 listener.onPauseButtonClicked();
         }
         else if(view.getId() == backButton.getId()){
-            view.animate();
+            if (listener != null)
+                listener.onBackButtonClicked();
         }
     }
 
@@ -86,6 +101,35 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
         }
     }
 
+    private String parseTime(int time){
+        int minutes = time / 60;
+        int seconds = time % 60;
+        String result = "";
+
+        if(minutes < 10)
+            result += Integer.toString(minutes);
+        result += minutes + ":";
+
+        if(seconds < 10)
+            result += 0;
+        result += Integer.toString(seconds);
+
+        return result;
+    }
+
+    public void setTotalTime(int totalTime){
+        this.totalTime = totalTime;
+        totalTimeTextView.setText(parseTime(totalTime));
+    }
+
+    public void setCurrentTime(int time){
+        currentTimeTextView.setText(parseTime(time));
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.N)
+            progressBar.setProgress((int) (((double) time / (double) totalTime) * 100));
+        else
+            progressBar.setProgress((int) (((double) time / (double) totalTime) * 100), true);
+    }
+
     public void setListener(OnControlInteractedListener listener) {
         this.listener = listener;
     }
@@ -95,7 +139,13 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
         updatePlayButton();
     }
 
+    @Override
+    public void OnTimeChanged(int seconds) {
+    }
+
     public interface OnControlInteractedListener {
         void onPauseButtonClicked();
+        void onBackButtonClicked();
+        void onTimeChanged(int time);
     }
 }
