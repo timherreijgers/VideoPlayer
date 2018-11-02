@@ -2,20 +2,16 @@ package nl.timherreijgers.videoplayer;
 
 import android.content.Context;
 import android.os.Build;
-import android.support.annotation.RestrictTo;
 import android.support.constraint.ConstraintLayout;
 import android.support.graphics.drawable.AnimatedVectorDrawableCompat;
-import android.support.graphics.drawable.AnimationUtilsCompat;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.animation.AnimationUtils;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-class VideoControlView extends ConstraintLayout implements View.OnClickListener, VideoTime.OnTimeChangedListener {
+class VideoControlView extends ConstraintLayout implements View.OnClickListener {
 
     private ImageButton playButton;
     private ImageButton backButton;
@@ -26,7 +22,6 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener,
     private OnControlInteractedListener listener;
     private AnimatedVectorDrawableCompat playToPause;
     private AnimatedVectorDrawableCompat pauseToPlay;
-
 
     private boolean playing;
     private int totalTime;
@@ -137,10 +132,6 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener,
     public void setPlaying(boolean playing) {
         this.playing = playing;
         updatePlayButton();
-    }
-
-    @Override
-    public void OnTimeChanged(int seconds) {
     }
 
     public interface OnControlInteractedListener {

@@ -1,10 +1,8 @@
 package nl.timherreijgers.videoplayer;
 
-import android.app.Application;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.support.constraint.ConstraintLayout;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -53,7 +51,10 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
             while(true){
                 try{
                     Thread.sleep(1000);
+                    if(mediaPlayer == null)
+                        return;
                     post(() -> videoControlView.setCurrentTime(mediaPlayer.getCurrentPosition() / 1000));
+                    Log.d(TAG, "VideoPlayer: Thread ticked :D");
                 }catch (InterruptedException e){
                     e.printStackTrace();
                 }
@@ -85,8 +86,6 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         videoControlView.setPlaying(false);
         if(mediaPlayer.getDuration() != -1)
             videoControlView.setTotalTime(mediaPlayer.getDuration() / 1000);
-
-
     }
 
     public boolean isPlaying() {
