@@ -15,7 +15,8 @@
     <nl.timherreijgers.videoplayer.VideoControlView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/videoControlView"/>
+        android:id="@+id/videoControlView"
+        android:visibility="invisible"/>
 
 
 </RelativeLayout>

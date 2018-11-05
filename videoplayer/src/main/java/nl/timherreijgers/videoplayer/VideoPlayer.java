@@ -3,16 +3,23 @@ package nl.timherreijgers.videoplayer;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Parcelable;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.RelativeLayout;
 
+import java.io.FileDescriptor;
 import java.io.IOException;
 
-public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener, SurfaceHolder.Callback, VideoControlView.OnControlInteractedListener {
+public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener,
+        SurfaceHolder.Callback, VideoControlView.OnControlInteractedListener,
+        Animation.AnimationListener {
 
     private static final String TAG = VideoPlayer.class.getSimpleName();
 
@@ -22,13 +29,13 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     private MediaPlayer mediaPlayer;
 
     private boolean sourceHasBeenSet = false;
+    private boolean playing = false;
 
     private int videoWidth;
     private int videoHeight;
 
-    private boolean playing = false;
-
     private Thread timeThread;
+    private Animation videoViewAnimation;
 
     public VideoPlayer(Context context) {
         this(context, null);
@@ -39,11 +46,27 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         LayoutInflater.from(context).inflate(R.layout.video_view, this);
         mediaPlayer = new MediaPlayer();
 
-        surfaceView = findViewById(R.id.surfaceView);
-        surfaceView.getHolder().addCallback(this);
-
         videoControlView = findViewById(R.id.videoControlView);
         videoControlView.setListener(this);
+
+        surfaceView = findViewById(R.id.surfaceView);
+        surfaceView.getHolder().addCallback(this);
+        surfaceView.setOnClickListener((e)->{
+            if(videoViewAnimation != null && !videoViewAnimation.hasEnded()) {
+                videoViewAnimation.cancel();
+                toggleControlViewVisibility();
+            }
+
+            if(videoControlView.getVisibility() == VISIBLE) {
+                videoViewAnimation = AnimationUtils.loadAnimation(context, R.anim.fade_out);
+                videoViewAnimation.setAnimationListener(this);
+                videoControlView.startAnimation(videoViewAnimation);
+            }else {
+                videoViewAnimation = AnimationUtils.loadAnimation(context, R.anim.fade_in);
+                videoViewAnimation.setAnimationListener(this);
+                videoControlView.startAnimation(videoViewAnimation);
+            }
+        });
 
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
@@ -53,6 +76,7 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
                     Thread.sleep(1000);
                     if(mediaPlayer == null)
                         return;
+
                     post(() -> videoControlView.setCurrentTime(mediaPlayer.getCurrentPosition() / 1000));
                     Log.d(TAG, "VideoPlayer: Thread ticked :D");
                 }catch (InterruptedException e){
@@ -64,7 +88,6 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     public void playVideo(String path) throws IOException{
-        Log.d(TAG, "playVideo() called with: path = [" + path + "]");
         mediaPlayer.setOnPreparedListener(this);
 
         mediaPlayer.setDataSource(path);
@@ -75,7 +98,6 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     private void startVideoPlayback() {
-        Log.d(TAG, "startVideoPlayback() called with: sourceHasBeenSet = [" + sourceHasBeenSet + "], surfaceHolder = [" + surfaceHolder + "]");
         if(!sourceHasBeenSet || surfaceHolder == null || videoHeight == 0 || videoWidth == 0)
             return;
 
@@ -93,12 +115,22 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     public int getTime(){
-        throw new UnsupportedOperationException("Not yet implemented");
+        return mediaPlayer.getCurrentPosition() / 1000;                //
+    }
+
+    public void stop() {
+        mediaPlayer.stop();
+    }
+
+    private void toggleControlViewVisibility(){
+        if(videoControlView.getVisibility() == VISIBLE)
+            videoControlView.setVisibility(INVISIBLE);
+        else
+            videoControlView.setVisibility(VISIBLE);
     }
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        Log.d(TAG, "onPrepared() called with: mp = [" + mp + "]");
         videoWidth = mp.getVideoWidth();
         videoHeight = mp.getVideoHeight();
         startVideoPlayback();
@@ -141,6 +173,21 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
     @Override
     public void onTimeChanged(int time) {
+
+    }
+
+    @Override
+    public void onAnimationStart(Animation animation) {
+
+    }
+
+    @Override
+    public void onAnimationEnd(Animation animation) {
+        toggleControlViewVisibility();
+    }
+
+    @Override
+    public void onAnimationRepeat(Animation animation) {
 
     }
 }
