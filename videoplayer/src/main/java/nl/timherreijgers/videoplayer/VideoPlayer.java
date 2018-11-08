@@ -3,57 +3,91 @@ package nl.timherreijgers.videoplayer;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.MediaTimestamp;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.provider.MediaStore;
+import android.os.Parcelable;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.RelativeLayout;
 
 import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FilterInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Timer;
 
-public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener, SurfaceHolder.Callback {
+public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener,
+        SurfaceHolder.Callback, VideoControlView.OnControlInteractedListener,
+        Animation.AnimationListener {
 
     private static final String TAG = VideoPlayer.class.getSimpleName();
 
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
+    private VideoControlView videoControlView;
     private MediaPlayer mediaPlayer;
 
     private boolean sourceHasBeenSet = false;
+    private boolean playing = false;
 
     private int videoWidth;
     private int videoHeight;
-    private TimerTask timerTask;
 
-    private boolean playing = false;
+    private Thread timeThread;
+    private Animation videoViewAnimation;
 
     public VideoPlayer(Context context) {
         this(context, null);
     }
 
-    public VideoPlayer(Context context, AttributeSet attrs) {
+    public VideoPlayer(final Context context, AttributeSet attrs) {
         super(context, attrs);
         LayoutInflater.from(context).inflate(R.layout.video_view, this);
         mediaPlayer = new MediaPlayer();
-        timerTask = new TimerTask();
+
+        videoControlView = findViewById(R.id.videoControlView);
+        videoControlView.setListener(this);
 
         surfaceView = findViewById(R.id.surfaceView);
         surfaceView.getHolder().addCallback(this);
+        surfaceView.setOnClickListener((e)->{
+            if(videoViewAnimation != null && !videoViewAnimation.hasEnded()) {
+                videoViewAnimation.cancel();
+                toggleControlViewVisibility();
+            }
+
+            if(videoControlView.getVisibility() == VISIBLE) {
+                videoViewAnimation = AnimationUtils.loadAnimation(context, R.anim.fade_out);
+                videoViewAnimation.setAnimationListener(this);
+                videoControlView.startAnimation(videoViewAnimation);
+            }else {
+                videoViewAnimation = AnimationUtils.loadAnimation(context, R.anim.fade_in);
+                videoViewAnimation.setAnimationListener(this);
+                videoControlView.startAnimation(videoViewAnimation);
+            }
+        });
+
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+        timeThread = new Thread(() -> {
+            while(true){
+                try{
+                    Thread.sleep(1000);
+                    if(mediaPlayer == null)
+                        return;
+
+                    post(() -> videoControlView.setCurrentTime(mediaPlayer.getCurrentPosition() / 1000));
+                    Log.d(TAG, "VideoPlayer: Thread ticked :D");
+                }catch (InterruptedException e){
+                    e.printStackTrace();
+                }
+            }
+        });
+        timeThread.start();
     }
 
     public void playVideo(String path) throws IOException{
-        Log.d(TAG, "playVideo() called with: path = [" + path + "]");
         mediaPlayer.setOnPreparedListener(this);
 
         mediaPlayer.setDataSource(path);
@@ -64,15 +98,16 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     private void startVideoPlayback() {
-        Log.d(TAG, "startVideoPlayback() called with: sourceHasBeenSet = [" + sourceHasBeenSet + "], surfaceHolder = [" + surfaceHolder + "]");
         if(!sourceHasBeenSet || surfaceHolder == null || videoHeight == 0 || videoWidth == 0)
             return;
 
         mediaPlayer.setDisplay(surfaceHolder);
         surfaceHolder.setFixedSize(videoWidth, videoHeight);
         mediaPlayer.start();
-        timerTask.execute();
         playing = true;
+        videoControlView.setPlaying(false);
+        if(mediaPlayer.getDuration() != -1)
+            videoControlView.setTotalTime(mediaPlayer.getDuration() / 1000);
     }
 
     public boolean isPlaying() {
@@ -80,12 +115,22 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     public int getTime(){
-        return timerTask.getTime();
+        return mediaPlayer.getCurrentPosition() / 1000;                //
+    }
+
+    public void stop() {
+        mediaPlayer.stop();
+    }
+
+    private void toggleControlViewVisibility(){
+        if(videoControlView.getVisibility() == VISIBLE)
+            videoControlView.setVisibility(INVISIBLE);
+        else
+            videoControlView.setVisibility(VISIBLE);
     }
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        Log.d(TAG, "onPrepared() called with: mp = [" + mp + "]");
         videoWidth = mp.getVideoWidth();
         videoHeight = mp.getVideoHeight();
         startVideoPlayback();
@@ -106,5 +151,43 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     public void surfaceDestroyed(SurfaceHolder holder) {
         mediaPlayer.stop();
         mediaPlayer = null;
+    }
+
+    @Override
+    public void onPauseButtonClicked() {
+        if(!sourceHasBeenSet || surfaceHolder == null || videoHeight == 0 || videoWidth == 0)
+            return;
+
+        if(mediaPlayer.isPlaying())
+            mediaPlayer.pause();
+        else
+            mediaPlayer.start();
+
+        videoControlView.setPlaying(!mediaPlayer.isPlaying());
+    }
+
+    @Override
+    public void onBackButtonClicked() {
+
+    }
+
+    @Override
+    public void onTimeChanged(int time) {
+
+    }
+
+    @Override
+    public void onAnimationStart(Animation animation) {
+
+    }
+
+    @Override
+    public void onAnimationEnd(Animation animation) {
+        toggleControlViewVisibility();
+    }
+
+    @Override
+    public void onAnimationRepeat(Animation animation) {
+
     }
 }
