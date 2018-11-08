@@ -14,7 +14,6 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.RelativeLayout;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
 
 public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener,
@@ -23,16 +22,18 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
     private static final String TAG = VideoPlayer.class.getSimpleName();
 
-    private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private VideoControlView videoControlView;
     private MediaPlayer mediaPlayer;
 
     private boolean sourceHasBeenSet = false;
     private boolean playing = false;
+    private boolean restored = false;
+    private int currentPosition = 0;
 
     private int videoWidth;
     private int videoHeight;
+    private String source;
 
     private Thread timeThread;
     private Animation videoViewAnimation;
@@ -44,12 +45,11 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     public VideoPlayer(final Context context, AttributeSet attrs) {
         super(context, attrs);
         LayoutInflater.from(context).inflate(R.layout.video_view, this);
-        mediaPlayer = new MediaPlayer();
 
         videoControlView = findViewById(R.id.videoControlView);
         videoControlView.setListener(this);
 
-        surfaceView = findViewById(R.id.surfaceView);
+        SurfaceView surfaceView = findViewById(R.id.surfaceView);
         surfaceView.getHolder().addCallback(this);
         surfaceView.setOnClickListener((e)->{
             if(videoViewAnimation != null && !videoViewAnimation.hasEnded()) {
@@ -68,17 +68,14 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
             }
         });
 
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
         timeThread = new Thread(() -> {
             while(true){
                 try{
                     Thread.sleep(1000);
-                    if(mediaPlayer == null)
-                        return;
-
-                    post(() -> videoControlView.setCurrentTime(mediaPlayer.getCurrentPosition() / 1000));
-                    Log.d(TAG, "VideoPlayer: Thread ticked :D");
+                    post(() -> {
+                        if(mediaPlayer != null)
+                            videoControlView.setCurrentTime(mediaPlayer.getCurrentPosition() / 1000);
+                    });
                 }catch (InterruptedException e){
                     e.printStackTrace();
                 }
@@ -87,10 +84,24 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         timeThread.start();
     }
 
-    public void playVideo(String path) throws IOException{
-        mediaPlayer.setOnPreparedListener(this);
+    public void playVideo(String path) throws IOException {
+        source = path;
+        initMediaPLayer();
+    }
 
-        mediaPlayer.setDataSource(path);
+    private void initMediaPLayer() throws IOException{
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mediaPlayer.setScreenOnWhilePlaying(true);
+        mediaPlayer.setOnPreparedListener(this);
+        mediaPlayer.setOnBufferingUpdateListener(new MediaPlayer.OnBufferingUpdateListener() {
+            @Override
+            public void onBufferingUpdate(MediaPlayer mp, int percent) {
+                Log.d(TAG, "onBufferingUpdate() called with: mp = [" + mp + "], percent = [" + percent + "]");
+            }
+        });
+
+        mediaPlayer.setDataSource(source);
         mediaPlayer.setScreenOnWhilePlaying(true);
         mediaPlayer.prepareAsync();
 
@@ -98,16 +109,20 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     private void startVideoPlayback() {
-        if(!sourceHasBeenSet || surfaceHolder == null || videoHeight == 0 || videoWidth == 0)
+        if(!sourceHasBeenSet || surfaceHolder == null || videoHeight == 0 || videoWidth == 0 || mediaPlayer == null)
             return;
 
+        Log.d(TAG, "startVideoPlayback: Video playback started!");
         mediaPlayer.setDisplay(surfaceHolder);
         surfaceHolder.setFixedSize(videoWidth, videoHeight);
         mediaPlayer.start();
         playing = true;
         videoControlView.setPlaying(false);
-        if(mediaPlayer.getDuration() != -1)
+        if(restored)
+            mediaPlayer.seekTo(currentPosition * 1000);
+        if (mediaPlayer.getDuration() != -1)
             videoControlView.setTotalTime(mediaPlayer.getDuration() / 1000);
+        restored = false;
     }
 
     public boolean isPlaying() {
@@ -115,11 +130,13 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     public int getTime(){
-        return mediaPlayer.getCurrentPosition() / 1000;                //
+        return mediaPlayer.getCurrentPosition() / 1000;
     }
 
     public void stop() {
         mediaPlayer.stop();
+        mediaPlayer.reset();
+        mediaPlayer.release();
     }
 
     private void toggleControlViewVisibility(){
@@ -149,8 +166,7 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        mediaPlayer.stop();
-        mediaPlayer = null;
+
     }
 
     @Override
@@ -189,5 +205,40 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     @Override
     public void onAnimationRepeat(Animation animation) {
 
+    }
+
+    @Nullable
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        VideoViewParcelable parcelable = new VideoViewParcelable(super.onSaveInstanceState());
+        if(mediaPlayer != null) {
+            parcelable.setProgress(mediaPlayer.getCurrentPosition());
+            parcelable.setTotalTime(mediaPlayer.getDuration());
+        }else{
+            parcelable.setProgress(0);
+            parcelable.setTotalTime(0);
+        }
+        parcelable.setSource(source);
+        stop();
+        mediaPlayer = null;
+        return parcelable;
+    }
+
+
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        super.onRestoreInstanceState(state);
+        VideoViewParcelable parcelable = (VideoViewParcelable) state;
+        videoWidth = 0;
+        videoHeight = 0;
+        currentPosition = parcelable.getProgress();
+        restored = true;
+
+        try {
+            initMediaPLayer();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
