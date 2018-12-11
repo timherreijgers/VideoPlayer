@@ -11,46 +11,46 @@ import android.view.ViewGroup;
 import java.io.IOException;
 
 //TODO: Add things like back button enabled, subtitles enabled, automated repeat, etc.
-public class VideoPlayerFragment extends Fragment {
+public class VideoPlayerFragment extends Fragment implements VideoPlayer.OnBackButtonPressedListener {
 
     private static final String TAG = "VIDEO_PLAYER_FRAGMENT";
-    private VideoPlayer videoView;
-    
-    private boolean autoStartPlayWhenBackInFocus = false;
+    private VideoPlayer videoPlayer;
+
+    private OnBackButtonPressedListener onBackButtonPressedListener;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        videoView = new VideoPlayer(inflater.getContext());
-        return videoView;
-    }
-
-    @Override
-    public void onPause() {
-        videoView.pause();
-        super.onPause();
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if(autoStartPlayWhenBackInFocus)
-            videoView.pause();
+        videoPlayer = new VideoPlayer(inflater.getContext());
+        videoPlayer.setOnBackButtonPressedListener(this);
+        return videoPlayer;
     }
 
     public void playVideo(String path) throws IOException {
-        videoView.playVideo(path);
+        videoPlayer.playVideo(path);
     }
 
     public boolean isPlaying() {
-        return videoView.isPlaying();
+        return videoPlayer.isPlaying();
     }
 
-    public boolean getAutoStartPlayWhenBackInFocus() {
-        return autoStartPlayWhenBackInFocus;
+    //region Listeners
+    public void setOnBackButtonPressedListener(OnBackButtonPressedListener onBackButtonPressedListener) {
+        this.onBackButtonPressedListener = onBackButtonPressedListener;
     }
 
-    public void setAutoStartPlayWhenBackInFocus(boolean autoStartPlayWhenBackInFocus) {
-        this.autoStartPlayWhenBackInFocus = autoStartPlayWhenBackInFocus;
+    public boolean hasOnBackButtonPressedListener() {
+        return onBackButtonPressedListener != null;
     }
+
+    @Override
+    public void onBackButtonPressed() {
+        if(onBackButtonPressedListener != null)
+            onBackButtonPressedListener.onBackButtonPressed();
+    }
+
+    public interface OnBackButtonPressedListener {
+        void onBackButtonPressed();
+    }
+    //endregion
 }

@@ -25,6 +25,8 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     private SurfaceHolder surfaceHolder;
     private VideoControlView videoControlView;
     private MediaPlayer mediaPlayer;
+    private OnBackButtonPressedListener onBackButtonPressedListener;
+    private Animation videoViewAnimation;
 
     private boolean sourceHasBeenSet = false;
     private boolean playing = false;
@@ -33,8 +35,6 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     private int videoWidth;
     private int videoHeight;
     private String source;
-
-    private Animation videoViewAnimation;
 
     public VideoPlayer(Context context) {
         this(context, null);
@@ -148,6 +148,14 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         mediaPlayer.start();
     }
 
+    public void setOnBackButtonPressedListener(OnBackButtonPressedListener onBackButtonPressedListener) {
+        this.onBackButtonPressedListener = onBackButtonPressedListener;
+    }
+
+    public boolean hasOnBackButtonPressedListener() {
+        return onBackButtonPressedListener != null;
+    }
+
     @Override
     public void onPrepared(MediaPlayer mp) {
         videoWidth = mp.getVideoWidth();
@@ -186,7 +194,8 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
     @Override
     public void onBackButtonClicked() {
-
+        if(onBackButtonPressedListener != null)
+            onBackButtonPressedListener.onBackButtonPressed();
     }
 
     @Override
@@ -207,5 +216,9 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     @Override
     public void onAnimationRepeat(Animation animation) {
 
+    }
+
+    public interface OnBackButtonPressedListener {
+        void onBackButtonPressed();
     }
 }
