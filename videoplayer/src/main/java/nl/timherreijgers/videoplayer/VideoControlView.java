@@ -72,6 +72,11 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
         }
     }
 
+    public void pause(){
+        playing = false;
+        updatePlayButton();
+    }
+
     private void updatePlayButton() {
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
             updatePlayButtonNonAnimated();

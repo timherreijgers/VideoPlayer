@@ -14,28 +14,27 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.RelativeLayout;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
 
 public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPreparedListener,
         SurfaceHolder.Callback, VideoControlView.OnControlInteractedListener,
         Animation.AnimationListener {
 
-    private static final String TAG = VideoPlayer.class.getSimpleName();
+    private static final String TAG = "VIDEO_PLAYER";
 
-    private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
     private VideoControlView videoControlView;
     private MediaPlayer mediaPlayer;
+    private OnBackButtonPressedListener onBackButtonPressedListener;
+    private Animation videoViewAnimation;
 
     private boolean sourceHasBeenSet = false;
     private boolean playing = false;
+    private boolean restored = false;
 
     private int videoWidth;
     private int videoHeight;
-
-    private Thread timeThread;
-    private Animation videoViewAnimation;
+    private String source;
 
     public VideoPlayer(Context context) {
         this(context, null);
@@ -44,12 +43,11 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     public VideoPlayer(final Context context, AttributeSet attrs) {
         super(context, attrs);
         LayoutInflater.from(context).inflate(R.layout.video_view, this);
-        mediaPlayer = new MediaPlayer();
 
         videoControlView = findViewById(R.id.videoControlView);
         videoControlView.setListener(this);
 
-        surfaceView = findViewById(R.id.surfaceView);
+        SurfaceView surfaceView = findViewById(R.id.surfaceView);
         surfaceView.getHolder().addCallback(this);
         surfaceView.setOnClickListener((e)->{
             if(videoViewAnimation != null && !videoViewAnimation.hasEnded()) {
@@ -68,18 +66,15 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
             }
         });
 
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
-        timeThread = new Thread(() -> {
-            while(true){
-                try{
+        Thread timeThread = new Thread(() -> {
+            while (true) {
+                try {
                     Thread.sleep(1000);
-                    if(mediaPlayer == null)
-                        return;
-
-                    post(() -> videoControlView.setCurrentTime(mediaPlayer.getCurrentPosition() / 1000));
-                    Log.d(TAG, "VideoPlayer: Thread ticked :D");
-                }catch (InterruptedException e){
+                    post(() -> {
+                        if (mediaPlayer.isPlaying())
+                            videoControlView.setCurrentTime(mediaPlayer.getCurrentPosition() / 1000);
+                    });
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
@@ -87,10 +82,19 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         timeThread.start();
     }
 
-    public void playVideo(String path) throws IOException{
-        mediaPlayer.setOnPreparedListener(this);
+    public void playVideo(String path) throws IOException {
+        source = path;
+        initMediaPLayer();
+    }
 
-        mediaPlayer.setDataSource(path);
+    private void initMediaPLayer() throws IOException{
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        mediaPlayer.setScreenOnWhilePlaying(true);
+        mediaPlayer.setOnPreparedListener(this);
+        mediaPlayer.setOnBufferingUpdateListener((mp, percent) -> Log.d(TAG, "onBufferingUpdate() called with: mp = [" + mp + "], percent = [" + percent + "]"));
+
+        mediaPlayer.setDataSource(source);
         mediaPlayer.setScreenOnWhilePlaying(true);
         mediaPlayer.prepareAsync();
 
@@ -98,16 +102,21 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     private void startVideoPlayback() {
-        if(!sourceHasBeenSet || surfaceHolder == null || videoHeight == 0 || videoWidth == 0)
+        if(!sourceHasBeenSet || surfaceHolder == null || videoHeight == 0 || videoWidth == 0 || mediaPlayer == null)
             return;
 
+        Log.d(TAG, "startVideoPlayback: Video playback started!");
         mediaPlayer.setDisplay(surfaceHolder);
         surfaceHolder.setFixedSize(videoWidth, videoHeight);
         mediaPlayer.start();
         playing = true;
         videoControlView.setPlaying(false);
-        if(mediaPlayer.getDuration() != -1)
+        int currentPosition = 0;
+        if(restored)
+            mediaPlayer.seekTo(currentPosition * 1000);
+        if (mediaPlayer.getDuration() != -1)
             videoControlView.setTotalTime(mediaPlayer.getDuration() / 1000);
+        restored = false;
     }
 
     public boolean isPlaying() {
@@ -115,11 +124,13 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     }
 
     public int getTime(){
-        return mediaPlayer.getCurrentPosition() / 1000;                //
+        return mediaPlayer.getCurrentPosition() / 1000;
     }
 
     public void stop() {
         mediaPlayer.stop();
+        mediaPlayer.reset();
+        mediaPlayer.release();
     }
 
     private void toggleControlViewVisibility(){
@@ -127,6 +138,22 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
             videoControlView.setVisibility(INVISIBLE);
         else
             videoControlView.setVisibility(VISIBLE);
+    }
+
+    public void pause() {
+        mediaPlayer.pause();
+    }
+
+    public void start() {
+        mediaPlayer.start();
+    }
+
+    public void setOnBackButtonPressedListener(OnBackButtonPressedListener onBackButtonPressedListener) {
+        this.onBackButtonPressedListener = onBackButtonPressedListener;
+    }
+
+    public boolean hasOnBackButtonPressedListener() {
+        return onBackButtonPressedListener != null;
     }
 
     @Override
@@ -139,7 +166,7 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         this.surfaceHolder = holder;
-        startVideoPlayback();
+            startVideoPlayback();
     }
 
     @Override
@@ -149,8 +176,7 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        mediaPlayer.stop();
-        mediaPlayer = null;
+
     }
 
     @Override
@@ -168,7 +194,8 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
 
     @Override
     public void onBackButtonClicked() {
-
+        if(onBackButtonPressedListener != null)
+            onBackButtonPressedListener.onBackButtonPressed();
     }
 
     @Override
@@ -189,5 +216,9 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     @Override
     public void onAnimationRepeat(Animation animation) {
 
+    }
+
+    public interface OnBackButtonPressedListener {
+        void onBackButtonPressed();
     }
 }

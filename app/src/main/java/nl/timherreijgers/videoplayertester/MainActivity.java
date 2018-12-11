@@ -4,34 +4,30 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
-import java.io.File;
-import java.io.FileDescriptor;
 import java.io.IOException;
 
-import nl.timherreijgers.videoplayer.VideoPlayer;
+import nl.timherreijgers.videoplayer.VideoPlayerFragment;
 
-public class MainActivity extends AppCompatActivity {
-
-    private static final String TAG = MainActivity.class.getSimpleName();
-    
-    private VideoPlayer player;
+public class MainActivity extends AppCompatActivity implements VideoPlayerFragment.OnBackButtonPressedListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "onCreate: ");
         setContentView(R.layout.activity_main);
-        player = findViewById(R.id.videoPlayer);
-        try {
-            player.playVideo("http://vjs.zencdn.net/v/oceans.mp4");
-        } catch (IOException e) {
-            e.printStackTrace();
+        VideoPlayerFragment videoPlayer = (VideoPlayerFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_video_player);
+
+        if(videoPlayer != null) {
+            try {
+                videoPlayer.setOnBackButtonPressedListener(this);
+                videoPlayer.playVideo("http://vjs.zencdn.net/v/oceans.mp4");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        player.stop();
+    public void onBackButtonPressed() {
+        Log.d("MAIN_ACTIVITY", "onBackButtonPressed: The back button has been pressed!");
     }
 }
