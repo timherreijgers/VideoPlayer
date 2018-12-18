@@ -92,6 +92,12 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         mediaPlayer.setScreenOnWhilePlaying(true);
         mediaPlayer.setOnPreparedListener(this);
+        mediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+            @Override
+            public boolean onError(MediaPlayer mp, int what, int extra) {
+                return false;
+            }
+        });
         mediaPlayer.setOnBufferingUpdateListener((mp, percent) -> Log.d(TAG, "onBufferingUpdate() called with: mp = [" + mp + "], percent = [" + percent + "]"));
 
         mediaPlayer.setDataSource(source);
@@ -166,7 +172,7 @@ public class VideoPlayer extends RelativeLayout implements MediaPlayer.OnPrepare
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         this.surfaceHolder = holder;
-            startVideoPlayback();
+        startVideoPlayback();
     }
 
     @Override
