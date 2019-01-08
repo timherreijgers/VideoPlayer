@@ -1,56 +1,47 @@
 package nl.timherreijgers.videoplayer;
 
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProviders;
+
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 
-import java.io.IOException;
+public class VideoPlayerFragment extends Fragment {
 
-//TODO: Add things like back button enabled, subtitles enabled, automated repeat, etc.
-public class VideoPlayerFragment extends Fragment implements VideoPlayer.OnBackButtonPressedListener {
+    private static String TAG = "VIDEO_PLAYER";
 
-    private static final String TAG = "VIDEO_PLAYER_FRAGMENT";
-    private VideoPlayer videoPlayer;
+    private VideoPlayerFragmentViewModel viewModel;
+    private SurfaceView surfaceView;
 
-    private OnBackButtonPressedListener onBackButtonPressedListener;
+    public VideoPlayerFragment() {
+        Log.d(TAG, "VideoPlayerFragment() called");
+    }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        videoPlayer = new VideoPlayer(inflater.getContext());
-        videoPlayer.setOnBackButtonPressedListener(this);
-        return videoPlayer;
-    }
+        Log.d(TAG, "onCreateView() called with: inflater = [" + inflater + "], container = [" + container + "], savedInstanceState = [" + savedInstanceState + "]");
+        View view = inflater.inflate(R.layout.fragment_video_player, container, false);
+        surfaceView = view.findViewById(R.id.surface_view);
+        viewModel = ViewModelProviders.of(this).get(VideoPlayerFragmentViewModel.class);
+        viewModel.setVideoPath("http://vjs.zencdn.net/v/oceans.mp4");
 
-    public void playVideo(String path) throws IOException {
-        videoPlayer.playVideo(path);
-    }
-
-    public boolean isPlaying() {
-        return videoPlayer.isPlaying();
-    }
-
-    //region Listeners
-    public void setOnBackButtonPressedListener(OnBackButtonPressedListener onBackButtonPressedListener) {
-        this.onBackButtonPressedListener = onBackButtonPressedListener;
-    }
-
-    public boolean hasOnBackButtonPressedListener() {
-        return onBackButtonPressedListener != null;
+        surfaceView.getHolder().addCallback(viewModel);
+        surfaceView.setOnClickListener(e -> {
+//            TODO: Toggle the visibility for the videoControlView here
+        });
+        return view;
     }
 
     @Override
-    public void onBackButtonPressed() {
-        if(onBackButtonPressedListener != null)
-            onBackButtonPressedListener.onBackButtonPressed();
+    public void onPause() {
+        super.onPause();
+        viewModel.onPause();
     }
-
-    public interface OnBackButtonPressedListener {
-        void onBackButtonPressed();
-    }
-    //endregion
 }

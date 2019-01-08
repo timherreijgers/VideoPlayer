@@ -2,8 +2,8 @@ package nl.timherreijgers.videoplayer;
 
 import android.content.Context;
 import android.os.Build;
-import android.support.constraint.ConstraintLayout;
-import android.support.graphics.drawable.AnimatedVectorDrawableCompat;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
