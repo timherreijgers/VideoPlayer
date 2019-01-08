@@ -11,13 +11,21 @@ import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 
-public class VideoPlayerFragment extends Fragment {
+import static android.view.View.INVISIBLE;
+import static android.view.View.VISIBLE;
+
+public class VideoPlayerFragment extends Fragment implements Animation.AnimationListener {
 
     private static String TAG = "VIDEO_PLAYER";
 
     private VideoPlayerFragmentViewModel viewModel;
     private SurfaceView surfaceView;
+    private VideoControlView videoControlView;
+    private Animation videoViewAnimation;
+    private String tempVideoPath;
 
     public VideoPlayerFragment() {
         Log.d(TAG, "VideoPlayerFragment() called");
@@ -29,19 +37,83 @@ public class VideoPlayerFragment extends Fragment {
         Log.d(TAG, "onCreateView() called with: inflater = [" + inflater + "], container = [" + container + "], savedInstanceState = [" + savedInstanceState + "]");
         View view = inflater.inflate(R.layout.fragment_video_player, container, false);
         surfaceView = view.findViewById(R.id.surface_view);
+        videoControlView = view.findViewById(R.id.video_control_view);
         viewModel = ViewModelProviders.of(this).get(VideoPlayerFragmentViewModel.class);
-        viewModel.setVideoPath("http://vjs.zencdn.net/v/oceans.mp4");
+        videoControlView.setListener(viewModel);
+        if(tempVideoPath != null) {
+            viewModel.setVideoPath(tempVideoPath);
+            tempVideoPath = null;
+        }
+
+        viewModel.playing.observe(this, videoControlView::setPlaying);
+        viewModel.totalDuration.observe(this, videoControlView::setTotalTime);
+        viewModel.currentTime.observe(this, videoControlView::setCurrentTime);
 
         surfaceView.getHolder().addCallback(viewModel);
         surfaceView.setOnClickListener(e -> {
-//            TODO: Toggle the visibility for the videoControlView here
+            if(videoViewAnimation != null && !videoViewAnimation.hasEnded()) {
+                videoViewAnimation.cancel();
+                toggleControlViewVisibility();
+            }
+
+            if(videoControlView.getVisibility() == VISIBLE) {
+                videoViewAnimation = AnimationUtils.loadAnimation(getContext(), R.anim.fade_out);
+                videoViewAnimation.setAnimationListener(this);
+                videoControlView.startAnimation(videoViewAnimation);
+            }else {
+                videoViewAnimation = AnimationUtils.loadAnimation(getContext(), R.anim.fade_in);
+                videoViewAnimation.setAnimationListener(this);
+                videoControlView.startAnimation(videoViewAnimation);
+            }
         });
         return view;
+    }
+
+    private void toggleControlViewVisibility(){
+        if(videoControlView.getVisibility() == VISIBLE)
+            videoControlView.setVisibility(INVISIBLE);
+        else
+            videoControlView.setVisibility(VISIBLE);
+    }
+
+    public void setVideoPath(String videoPath) {
+        if(viewModel == null){
+            tempVideoPath = videoPath;
+        } else {
+            viewModel.setVideoPath(videoPath);
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
         viewModel.onPause();
+    }
+
+    @Override
+    public void onAnimationStart(Animation animation) {
+
+    }
+
+    @Override
+    public void onAnimationEnd(Animation animation) {
+        toggleControlViewVisibility();
+    }
+
+    @Override
+    public void onAnimationRepeat(Animation animation) {
+
+    }
+
+    public void setOnBackButtonPressedListener(OnBackButtonPressedListener onBackButtonPressedListener) {
+        viewModel.setOnBackButtonPressedListener(onBackButtonPressedListener);
+    }
+
+    public boolean hasOnBackButtonPressedListener() {
+        return  viewModel.hasOnBackButtonPressedListener();
+    }
+
+    public interface OnBackButtonPressedListener {
+        void onBackButtonPressed();
     }
 }
