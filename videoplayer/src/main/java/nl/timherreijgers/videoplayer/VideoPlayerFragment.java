@@ -51,6 +51,12 @@ public class VideoPlayerFragment extends Fragment implements Animation.Animation
 
         surfaceView.getHolder().addCallback(viewModel);
         surfaceView.setOnClickListener(e -> {
+            if(videoViewAnimation == null) {
+                videoControlView.setVisibility(View.VISIBLE);
+                videoViewAnimation = AnimationUtils.loadAnimation(getContext(), R.anim.fade_in);
+                videoControlView.startAnimation(videoViewAnimation);
+            }
+
             if(videoViewAnimation != null && !videoViewAnimation.hasEnded()) {
                 videoViewAnimation.cancel();
                 toggleControlViewVisibility();
