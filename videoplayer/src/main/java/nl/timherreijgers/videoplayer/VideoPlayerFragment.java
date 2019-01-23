@@ -45,9 +45,10 @@ public class VideoPlayerFragment extends Fragment implements Animation.Animation
             tempVideoPath = null;
         }
 
-        viewModel.playing.observe(this, videoControlView::setPlaying);
-        viewModel.totalDuration.observe(this, videoControlView::setTotalTime);
-        viewModel.currentTime.observe(this, videoControlView::setCurrentTime);
+        viewModel.getPlaying().observe(this, videoControlView::setPlaying);
+        viewModel.getTotalDuration().observe(this, videoControlView::setTotalTime);
+        viewModel.getCurrentTime().observe(this, videoControlView::setCurrentTime);
+        viewModel.getBuffering().observe(this, videoControlView::setBuffering);
 
         surfaceView.getHolder().addCallback(viewModel);
         surfaceView.setOnClickListener(e -> {

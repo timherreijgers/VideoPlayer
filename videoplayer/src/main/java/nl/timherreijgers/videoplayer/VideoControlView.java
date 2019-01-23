@@ -2,22 +2,27 @@ package nl.timherreijgers.videoplayer;
 
 import android.content.Context;
 import android.os.Build;
+
+import androidx.appcompat.widget.AppCompatSeekBar;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 class VideoControlView extends ConstraintLayout implements View.OnClickListener {
 
     private ImageButton playButton;
     private ImageButton backButton;
-    private ProgressBar progressBar;
+    private AppCompatSeekBar progressBar;
     private TextView currentTimeTextView;
     private TextView totalTimeTextView;
+    private ProgressBar bufferingProgressBar;
 
     private OnControlInteractedListener listener;
     private AnimatedVectorDrawableCompat playToPause;
@@ -38,7 +43,7 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
         super(context, attrs, defStyleAttr);
         LayoutInflater.from(context).inflate(R.layout.video_control_view, this);
 
-        progressBar = findViewById(R.id.progressBar);
+        progressBar = findViewById(R.id.seekBar);
         progressBar.setProgress(35);
 
         playButton = findViewById(R.id.playButton);
@@ -49,12 +54,32 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
 
         currentTimeTextView = findViewById(R.id.currentTime);
         totalTimeTextView = findViewById(R.id.totalTime);
+        bufferingProgressBar = findViewById(R.id.bufferingProgressBar);
 
         playToPause = AnimatedVectorDrawableCompat.create(context, R.drawable.play_to_pause);
         pauseToPlay = AnimatedVectorDrawableCompat.create(context, R.drawable.pause_to_play);
 
         playing = true;
         totalTime = 0;
+
+        progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                int time = (int) Math.round(totalTime / 100d * seekBar.getProgress());
+                if(listener != null)
+                    listener.onTimeChanged(time);
+            }
+        });
     }
 
     @Override
@@ -70,11 +95,6 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
             if (listener != null)
                 listener.onBackButtonClicked();
         }
-    }
-
-    public void pause(){
-        playing = false;
-        updatePlayButton();
     }
 
     private void updatePlayButton() {
@@ -137,6 +157,11 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
     public void setPlaying(boolean playing) {
         this.playing = playing;
         updatePlayButton();
+    }
+
+    public void setBuffering(boolean buffering) {
+        playButton.setVisibility(buffering ? View.GONE : View.VISIBLE);
+        bufferingProgressBar.setVisibility(buffering ? View.VISIBLE : View.GONE);
     }
 
     public interface OnControlInteractedListener {
