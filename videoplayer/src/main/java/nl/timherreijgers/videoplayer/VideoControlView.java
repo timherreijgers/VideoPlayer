@@ -2,20 +2,24 @@ package nl.timherreijgers.videoplayer;
 
 import android.content.Context;
 import android.os.Build;
+
+import androidx.appcompat.widget.AppCompatSeekBar;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.vectordrawable.graphics.drawable.AnimatedVectorDrawableCompat;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 class VideoControlView extends ConstraintLayout implements View.OnClickListener {
 
     private ImageButton playButton;
     private ImageButton backButton;
-    private ProgressBar progressBar;
+    private AppCompatSeekBar progressBar;
     private TextView currentTimeTextView;
     private TextView totalTimeTextView;
 
@@ -38,7 +42,7 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
         super(context, attrs, defStyleAttr);
         LayoutInflater.from(context).inflate(R.layout.video_control_view, this);
 
-        progressBar = findViewById(R.id.progressBar);
+        progressBar = findViewById(R.id.seekBar);
         progressBar.setProgress(35);
 
         playButton = findViewById(R.id.playButton);
@@ -55,6 +59,25 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
 
         playing = true;
         totalTime = 0;
+
+        progressBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                int time = (int) (totalTime / 100d * seekBar.getProgress());
+                if(listener != null)
+                    listener.onTimeChanged(time);
+            }
+        });
     }
 
     @Override

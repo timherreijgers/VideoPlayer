@@ -146,6 +146,6 @@ public class VideoPlayerFragmentViewModel extends ViewModel implements SurfaceHo
 
     @Override
     public void onTimeChanged(int time) {
-
+        mediaPlayer.seekTo(time * 1000);
     }
 }
