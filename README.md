@@ -51,9 +51,9 @@ videoPlayer.setBackButtonPressedListener(() -> doSomething());
 - Integrated pause button
 - Integrated back button
 - Integrated non-scrollable progress bar
+- Scroll through video
 
 # Future features
-- Scroll through video
 - customizable colors
 
 # Known bugs

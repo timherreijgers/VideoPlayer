@@ -19,19 +19,20 @@ public class VideoPlayerFragmentViewModel extends ViewModel implements SurfaceHo
     private MediaPlayer mediaPlayer;
     private int videoWidth;
     private int videoHeight;
-    private boolean surfaceHolderPrepared = false;
     private String videoPath;
     private VideoPlayerFragment.OnBackButtonPressedListener onBackButtonPressedListener;
 
-    LiveData<Boolean> playing;
-    LiveData<Integer> totalDuration;
-    LiveData<Integer> currentTime;
+    private MutableLiveData<Boolean> playing;
+    private MutableLiveData<Integer> totalDuration;
+    private MutableLiveData<Integer> currentTime;
+    private MutableLiveData<Boolean> buffering;
 
     public VideoPlayerFragmentViewModel() {
         Log.d(TAG, "VideoPlayerFragmentViewModel() called");
         playing = new MutableLiveData<>();
         totalDuration = new MutableLiveData<>();
         currentTime = new MutableLiveData<>();
+        buffering = new MutableLiveData<>();
 
         mediaPlayer = new MediaPlayer();
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -42,6 +43,21 @@ public class VideoPlayerFragmentViewModel extends ViewModel implements SurfaceHo
             return false;
         });
         mediaPlayer.setOnBufferingUpdateListener((mp, percent) -> Log.d(TAG, "onBufferingUpdate() called with: mp = [" + mp + "], percent = [" + percent + "]"));
+        mediaPlayer.setOnInfoListener(new MediaPlayer.OnInfoListener() {
+            @Override
+            public boolean onInfo(MediaPlayer mp, int what, int extra) {
+                Log.d(TAG, "onInfo() called with: mp = [" + mp + "], what = [" + what + "], extra = [" + extra + "]");
+                switch (what) {
+                    case MediaPlayer.MEDIA_INFO_BUFFERING_START:
+                        buffering.setValue(true);
+                        break;
+                    case MediaPlayer.MEDIA_INFO_BUFFERING_END:
+                        buffering.setValue(false);
+                        break;
+                }
+                return false;
+            }
+        });
 
         Thread timeThread = new Thread(() -> {
             while (true) {
@@ -78,8 +94,8 @@ public class VideoPlayerFragmentViewModel extends ViewModel implements SurfaceHo
         mediaPlayer.setDisplay(surfaceHolder);
         surfaceHolder.setFixedSize(videoWidth, videoHeight);
         mediaPlayer.start();
-        ((MutableLiveData<Boolean>) playing).postValue(false);
-        ((MutableLiveData<Integer>) totalDuration).postValue(mediaPlayer.getDuration() / 1000);
+        playing.postValue(false);
+        totalDuration.postValue(mediaPlayer.getDuration() / 1000);
     }
 
     void setVideoPath(String path) {
@@ -146,6 +162,22 @@ public class VideoPlayerFragmentViewModel extends ViewModel implements SurfaceHo
 
     @Override
     public void onTimeChanged(int time) {
+        mediaPlayer.seekTo(time * 1000);
+    }
 
+    public LiveData<Boolean> getPlaying() {
+        return playing;
+    }
+
+    public LiveData<Integer> getTotalDuration() {
+        return totalDuration;
+    }
+
+    public LiveData<Integer> getCurrentTime() {
+        return currentTime;
+    }
+
+    public LiveData<Boolean> getBuffering() {
+        return buffering;
     }
 }
