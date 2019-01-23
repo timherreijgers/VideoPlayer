@@ -22,6 +22,7 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
     private AppCompatSeekBar progressBar;
     private TextView currentTimeTextView;
     private TextView totalTimeTextView;
+    private ProgressBar bufferingProgressBar;
 
     private OnControlInteractedListener listener;
     private AnimatedVectorDrawableCompat playToPause;
@@ -53,6 +54,7 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
 
         currentTimeTextView = findViewById(R.id.currentTime);
         totalTimeTextView = findViewById(R.id.totalTime);
+        bufferingProgressBar = findViewById(R.id.bufferingProgressBar);
 
         playToPause = AnimatedVectorDrawableCompat.create(context, R.drawable.play_to_pause);
         pauseToPlay = AnimatedVectorDrawableCompat.create(context, R.drawable.pause_to_play);
@@ -73,7 +75,7 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                int time = (int) (totalTime / 100d * seekBar.getProgress());
+                int time = (int) Math.round(totalTime / 100d * seekBar.getProgress());
                 if(listener != null)
                     listener.onTimeChanged(time);
             }
@@ -93,11 +95,6 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
             if (listener != null)
                 listener.onBackButtonClicked();
         }
-    }
-
-    public void pause(){
-        playing = false;
-        updatePlayButton();
     }
 
     private void updatePlayButton() {
@@ -160,6 +157,11 @@ class VideoControlView extends ConstraintLayout implements View.OnClickListener 
     public void setPlaying(boolean playing) {
         this.playing = playing;
         updatePlayButton();
+    }
+
+    public void setBuffering(boolean buffering) {
+        playButton.setVisibility(buffering ? View.GONE : View.VISIBLE);
+        bufferingProgressBar.setVisibility(buffering ? View.VISIBLE : View.GONE);
     }
 
     public interface OnControlInteractedListener {

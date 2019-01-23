@@ -16,6 +16,17 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
+    <ProgressBar
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_centerHorizontal="true"
+        android:id="@+id/bufferingProgressBar"
+        android:visibility="gone"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
     <androidx.appcompat.widget.AppCompatSeekBar
         android:id="@+id/seekBar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -39,7 +50,8 @@
         android:text="00:00"
         android:textColor="#FFFFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginLeft="8dp" />
 
     <TextView
         android:id="@+id/totalTime"
@@ -50,7 +62,8 @@
         android:text="15:02"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:textColor="#FFFFFFFF" />
+        android:textColor="#FFFFFFFF"
+        android:layout_marginRight="8dp" />
 
     <ImageButton
         android:id="@+id/backButton"
@@ -61,6 +74,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@drawable/ic_arrow_back" />
+        android:src="@drawable/ic_arrow_back"
+        android:layout_marginLeft="8dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
